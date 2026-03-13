@@ -1,10 +1,12 @@
 <?php
 
-session_start();
+include_once "scripts/session.php";
 
-session_unset();
-session_destroy();
+if (isset($_SESSION['user'])) {
+    $_SESSION['user'] = null;
+    session_unset();
+    session_destroy();
+}
 
-header("location: ../index.php");
-exit;
-?>
+header('Location: login.php');
+exit();
