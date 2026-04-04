@@ -2,7 +2,6 @@
 
 include_once "./include/header.php";
 include_once "./scripts/DB.php";
-require_once "./scripts/session.php";
 
 if (!isset($_GET['provider'])) {
     header('Location: index.php');
@@ -16,10 +15,7 @@ if ($provider === false) {
     exit();
 }
 
-
-// Check if user is logged in
-$is_logged_in = isset($_SESSION['user']) && $_SESSION['user_type'] == 'customer';
-$user = $is_logged_in ? $_SESSION['user'] : null;
+include_once "msg/booking.php";
 
 ?>
 
@@ -79,49 +75,6 @@ $user = $is_logged_in ? $_SESSION['user'] : null;
             <form action="scripts/bookhall.php" method="post">
                 <input type="hidden" name="provider"
                     value="<?= $provider->id; ?>">
-                
-                <?php if ($is_logged_in): ?>
-                <div class="alert alert-success">
-                    <strong>Welcome back, <?php echo htmlspecialchars($user->full_name); ?>!</strong> 
-                    Your information will be automatically saved.
-                </div>
-                
-                <div class="form-group">
-                    <label for="">First Name</label>
-                    <input id="fname" name="fname" type="text" class="form-control" 
-                           value="<?php echo htmlspecialchars(explode(' ', $user->full_name)[0]); ?>" 
-                           required>
-                </div>
-
-                <div class="form-group">
-                    <label for="">Last Name</label>
-                    <input id="lname" name="lname" type="text" class="form-control" 
-                           value="<?php echo htmlspecialchars(end(explode(' ', $user->full_name))); ?>" 
-                           required>
-                </div>
-
-                <div class="form-group">
-                    <label for="">Contact No.</label>
-                    <input id="contact" name="contact" type="text" class="form-control" 
-                           value="<?php echo htmlspecialchars($user->phone); ?>"
-                           minlength="10" maxlength="10"
-                           oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');" 
-                           required>
-                </div>
-
-                <div class="form-group">
-                    <label for="">Address</label>
-                    <input id="adder" name="adder" type="text" class="form-control" 
-                           value="<?php echo htmlspecialchars($user->address); ?>"
-                           maxlength="255" required>
-                </div>
-
-                <?php else: ?>
-                
-                <div class="alert alert-info">
-                    <strong>Note:</strong> <a href="login.php?type=user">Login as a customer</a> to auto-fill your information.
-                </div>
-                
                 <div class="form-group">
                     <label for="">First Name</label>
                     <input id="fname" name="fname" type="text" class="form-control" placeholder="First Name" required>
@@ -145,17 +98,9 @@ $user = $is_logged_in ? $_SESSION['user'] : null;
                         maxlength="255" required>
                 </div>
 
-                <?php endif; ?>
-
                 <div class="form-group">
                     <label for="">Date</label>
-                    <input class="form-control" type="date" name="date" id="date" 
-                           min="<?php echo date('Y-m-d'); ?>" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="">Time</label>
-                    <input class="form-control" type="time" name="time" id="time" required>
+                    <input class="form-control" type="date" name="date" id="date" required>
                 </div>
 
                 <div class="form-group">
@@ -167,16 +112,14 @@ $user = $is_logged_in ? $_SESSION['user'] : null;
                 </div>
 
                 <div class="form-group">
-                    <label for="">Problem / Additional Notes</label>
+                    <label for="">Problem</label>
                     <textarea id="queries" name="queries" class="form-control" maxlength="255"
-                        placeholder="Any specific requirements or queries..."></textarea>
+                        placeholder="Any queries..?"></textarea>
                 </div>
 
                 <button style="margin-top: 30px" class="btn btn-block btn-primary" type="submit" name="book"
-                    id="book">Book Appointment
-                    </button>
-
-                    
+                    id="book">Book
+                    Hall</button>
             </form>
 
         </div>
@@ -184,4 +127,3 @@ $user = $is_logged_in ? $_SESSION['user'] : null;
 </div>
 
 <?php include_once "include/footer.php";
-<?php include_once "msg/booking.php";
