@@ -1,130 +1,99 @@
 <?php
-include('admin/includes/config.php');
-$bill_id = '';
-$customer_name = '';
-$bill_data = null;
-$items = [];
+session_start();
+include('includes/config.php');
 
-if (isset($_GET['bill_id']) && isset($_GET['customer_name'])) {
-    $bill_id = $_GET['bill_id'];
-    $customer_name = $_GET['customer_name'];
-
-    $stmt = $con->prepare("SELECT * FROM bills  WHERE id = ? AND customer_name = ?");
-    $stmt->bind_param("is", $bill_id, $customer_name);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $bill_data = $result->fetch_assoc();
-
-    if ($bill_data) {
-        $stmt = $con->prepare("SELECT * FROM bill_items join products on products.id=bill_items.product_id join categories on categories.id=products.category_id  WHERE bill_id = ?");
-        $stmt->bind_param("i", $bill_id);
-        $stmt->execute();
-        $items_result = $stmt->get_result();
-        while ($row = $items_result->fetch_assoc()) {
-            $items[] = $row;
-        }
+if(isset($_POST['login']))
+  {
+    $uname=$_POST['username'];
+    $Password=md5($_POST['inputpwd']);
+    $query=mysqli_query($con,"select ID,AdminuserName,UserType from tbladmin where  AdminuserName='$uname' && Password='$Password' ");
+    $ret=mysqli_fetch_array($query);
+    if($ret>0){
+      $_SESSION['aid']=$ret['ID'];
+      $_SESSION['uname']=$ret['AdminuserName'];
+      $_SESSION['utype']=$ret['UserType'];
+     header('location:dashboard.php');
     }
-}
-?>
-
+    else{
+    echo "<script>alert('Invalid Details.');</script>";          
+    }
+  }
+  ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Billing System | Check Your Bill </title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        @media print {
-            .no-print {
-                display: none;
-            }
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Billing System  | Login</title>
+
+  <!-- Google Font: Source Sans Pro -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="plugins/fontawesome-free/css/all.min.css">
+  <!-- icheck bootstrap -->
+  <link rel="stylesheet" href="plugins/icheck-bootstrap/icheck-bootstrap.min.css">
+  <!-- Theme style -->
+  <link rel="stylesheet" href="dist/css/adminlte.min.css">
 </head>
-<body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
-    <div class="container">
-        <a class="navbar-brand" href="#">Billing System</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item">
-                    <a class="nav-link active" href="index.php">Check Bill</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="admin/index.php" target="_blank">Admin Panel</a>
-                </li>
-            </ul>
+<body class="hold-transition login-page">
+<div class="login-box">
+  <!-- /.login-logo -->
+  <div class="card card-outline card-primary">
+    <div class="card-header text-center">
+      <a href="index.php" class="h1"><b>Admin</b> |  Billing System </a>
+    </div>
+    <div class="card-body">
+      <p class="login-box-msg">Sign in to start your session</p>
+
+      <form  method="post">
+        <div class="input-group mb-3">
+          <input type="text" class="form-control" placeholder="Username" name="username"  required>
+          <div class="input-group-append">
+            <div class="input-group-text">
+              <span class="fas fa-envelope"></span>
+            </div>
+          </div>
         </div>
+        <div class="input-group mb-3">
+          <input type="password" class="form-control" placeholder="Password" name="inputpwd"  required>
+          <div class="input-group-append">
+            <div class="input-group-text">
+              <span class="fas fa-lock"></span>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-8">
+   
+          </div>
+          <!-- /.col -->
+          <div class="col-4">
+            <button type="submit" class="btn btn-primary btn-block" name="login">Sign In</button>
+          </div>
+          <!-- /.col -->
+        </div>
+         <p class="mb-1"><i class="fas fa-home"></i>
+        <a href="../index.php">Home</a>
+      </p>
+      </form>
+
+
+      <p class="mb-1">
+        <a href="password-recovery.php">I forgot my password</a>
+      </p>
+
     </div>
-</nav>
+    <!-- /.card-body -->
+  </div>
+  <!-- /.card -->
+</div>
+<!-- /.login-box -->
 
-    <div class="container">
- 
-        <form class="row g-3 mb-4 no-print" method="get">
-            <div class="col-md-5">
-                <label for="bill_id" class="form-label">Bill ID</label>
-                <input type="text" class="form-control" name="bill_id" value="<?= htmlspecialchars($bill_id) ?>" required>
-            </div>
-            <div class="col-md-5">
-                <label for="customer_name" class="form-label">Customer Name</label>
-                <input type="text" class="form-control" name="customer_name" value="<?= htmlspecialchars($customer_name) ?>" required>
-            </div>
-            <div class="col-md-2 d-flex align-items-end">
-                <button type="submit" class="btn btn-success w-100">Check Bill</button>
-            </div>
-        </form>
-
-        <?php if ($bill_data): ?>
-            <!-- ✅ Bill Details -->
-            <div id="billArea">
-                <div class="card">
-                    <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0">Bill #<?= $bill_data['id'] ?> - <?= htmlspecialchars($bill_data['customer_name']) ?></h5>
-                        <small>Date: <?= $bill_data['created_at'] ?></small>
-                    </div>
-                    <div class="card-body">
-                        <table class="table table-bordered table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>#</th>
-                                    <th>Product</th>
-                                    <th>Category</th>
-                                    <th>Price</th>
-                                    <th>Qty</th>
-                                    <th>Tax (₹)</th>
-                                    <th>Total (₹)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php $i = 1; foreach ($items as $item): ?>
-                                <tr>
-                                    <td><?= $i++ ?></td>
-                                    <td><?= htmlspecialchars($item['name']) ?></td>
-                                    <td><?= htmlspecialchars($item['category_name']) ?></td>
-                                    <td>₹<?= $item['price'] ?></td>
-                                    <td><?= $item['quantity'] ?></td>
-                                    <td>₹<?= $item['tax_amount'] ?></td>
-                                    <td>₹<?= $item['total_amount'] ?></td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                        <h5 class="text-end">Grand Total: ₹<?= $bill_data['total_amount'] ?></h5>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ✅ Print Button -->
-            <div class="mt-3 no-print text-end">
-                <button onclick="window.print()" class="btn btn-outline-primary">🖨️ Print Bill</button>
-            </div>
-
-        <?php elseif ($bill_id && $customer_name): ?>
-            <div class="alert alert-danger">Bill not found for ID <strong><?= htmlspecialchars($bill_id) ?></strong> and customer <strong><?= htmlspecialchars($customer_name) ?></strong>.</div>
-        <?php endif; ?>
-    </div>
+<!-- jQuery -->
+<script src="plugins/jquery/jquery.min.js"></script>
+<!-- Bootstrap 4 -->
+<script src="plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<!-- AdminLTE App -->
+<script src="dist/js/adminlte.min.js"></script>
 </body>
 </html>
