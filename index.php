@@ -1,99 +1,88 @@
 <?php
-session_start();
-include('includes/config.php');
+require_once 'config/database.php';
+include 'includes/header.php';
 
-if(isset($_POST['login']))
-  {
-    $uname=$_POST['username'];
-    $Password=md5($_POST['inputpwd']);
-    $query=mysqli_query($con,"select ID,AdminuserName,UserType from tbladmin where  AdminuserName='$uname' && Password='$Password' ");
-    $ret=mysqli_fetch_array($query);
-    if($ret>0){
-      $_SESSION['aid']=$ret['ID'];
-      $_SESSION['uname']=$ret['AdminuserName'];
-      $_SESSION['utype']=$ret['UserType'];
-     header('location:dashboard.php');
-    }
-    else{
-    echo "<script>alert('Invalid Details.');</script>";          
-    }
-  }
-  ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Billing System  | Login</title>
+// Get statistics
+$stmt = $pdo->query("SELECT COUNT(*) as total_customers FROM customers");
+$total_customers = $stmt->fetch()['total_customers'];
 
-  <!-- Google Font: Source Sans Pro -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="plugins/fontawesome-free/css/all.min.css">
-  <!-- icheck bootstrap -->
-  <link rel="stylesheet" href="plugins/icheck-bootstrap/icheck-bootstrap.min.css">
-  <!-- Theme style -->
-  <link rel="stylesheet" href="dist/css/adminlte.min.css">
-</head>
-<body class="hold-transition login-page">
-<div class="login-box">
-  <!-- /.login-logo -->
-  <div class="card card-outline card-primary">
-    <div class="card-header text-center">
-      <a href="index.php" class="h1"><b>Admin</b> |  Billing System </a>
+$stmt = $pdo->query("SELECT COUNT(*) as total_requirements FROM requirements");
+$total_requirements = $stmt->fetch()['total_requirements'];
+
+$stmt = $pdo->query("SELECT COUNT(*) as pending FROM requirements WHERE status = 'Pending'");
+$pending = $stmt->fetch()['pending'];
+
+$stmt = $pdo->query("SELECT COUNT(*) as completed FROM requirements WHERE status = 'Completed'");
+$completed = $stmt->fetch()['completed'];
+
+// Get recent requirements
+$stmt = $pdo->query("
+    SELECT r.*, c.name as customer_name 
+    FROM requirements r 
+    JOIN customers c ON r.customer_id = c.id 
+    ORDER BY r.created_at DESC 
+    LIMIT 5
+");
+$recent_requirements = $stmt->fetchAll();
+?>
+
+<div class="card">
+    <h2>📊 Dashboard</h2>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 30px 0;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px;">
+            <h3 style="margin-bottom: 10px;">Total Customers</h3>
+            <h2 style="font-size: 36px;"><?php echo $total_customers; ?></h2>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 20px; border-radius: 10px;">
+            <h3 style="margin-bottom: 10px;">Total Requirements</h3>
+            <h2 style="font-size: 36px;"><?php echo $total_requirements; ?></h2>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #ffd166 0%, #ffb347 100%); color: white; padding: 20px; border-radius: 10px;">
+            <h3 style="margin-bottom: 10px;">Pending</h3>
+            <h2 style="font-size: 36px;"><?php echo $pending; ?></h2>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #6b8cff 0%, #4a6bff 100%); color: white; padding: 20px; border-radius: 10px;">
+            <h3 style="margin-bottom: 10px;">Completed</h3>
+            <h2 style="font-size: 36px;"><?php echo $completed; ?></h2>
+        </div>
     </div>
-    <div class="card-body">
-      <p class="login-box-msg">Sign in to start your session</p>
-
-      <form  method="post">
-        <div class="input-group mb-3">
-          <input type="text" class="form-control" placeholder="Username" name="username"  required>
-          <div class="input-group-append">
-            <div class="input-group-text">
-              <span class="fas fa-envelope"></span>
-            </div>
-          </div>
-        </div>
-        <div class="input-group mb-3">
-          <input type="password" class="form-control" placeholder="Password" name="inputpwd"  required>
-          <div class="input-group-append">
-            <div class="input-group-text">
-              <span class="fas fa-lock"></span>
-            </div>
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-8">
-   
-          </div>
-          <!-- /.col -->
-          <div class="col-4">
-            <button type="submit" class="btn btn-primary btn-block" name="login">Sign In</button>
-          </div>
-          <!-- /.col -->
-        </div>
-         <p class="mb-1"><i class="fas fa-home"></i>
-        <a href="../index.php">Home</a>
-      </p>
-      </form>
-
-
-      <p class="mb-1">
-        <a href="password-recovery.php">I forgot my password</a>
-      </p>
-
-    </div>
-    <!-- /.card-body -->
-  </div>
-  <!-- /.card -->
+    
+    <h3 style="margin: 30px 0 20px;">Recent Requirements</h3>
+    
+    <?php if(count($recent_requirements) > 0): ?>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Customer</th>
+                <th>Product</th>
+                <th>Quantity</th>
+                <th>Status</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach($recent_requirements as $req): ?>
+            <tr>
+                <td><?php echo htmlspecialchars($req['customer_name']); ?></td>
+                <td><?php echo htmlspecialchars($req['product_name']); ?></td>
+                <td><?php echo $req['quantity']; ?></td>
+                <td>
+                    <span class="status-badge status-<?php echo strtolower(str_replace(' ', '-', $req['status'])); ?>">
+                        <?php echo $req['status']; ?>
+                    </span>
+                </td>
+                <td><?php echo date('d-m-Y', strtotime($req['requirement_date'])); ?></td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+    <?php else: ?>
+    <p>No recent requirements found.</p>
+    <?php endif; ?>
 </div>
-<!-- /.login-box -->
 
-<!-- jQuery -->
-<script src="plugins/jquery/jquery.min.js"></script>
-<!-- Bootstrap 4 -->
-<script src="plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-<!-- AdminLTE App -->
-<script src="dist/js/adminlte.min.js"></script>
-</body>
-</html>
+<?php include 'includes/footer.php'; ?>
